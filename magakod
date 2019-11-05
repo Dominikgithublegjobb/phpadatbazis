@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	table, th,tr,td{
+		border: 1px solid red;
+		border-collapse: collapse;
+	}
+</style>
+</head>
+<body>
+
+
+	<form method="POST">
+		Add meg a tipusat: <br />
+		<input type="text" name="input_tipus"><br />
+		Add meg a liter: <br />
+		<input type="number" name="input_liter"><br />
+		Add meg a arat: <br />
+		<input type="number" name="input_ar"><br />
+		<input type="hidden" name="action" value="cmd_insert_user">
+		<input type="submit" value="Felvétel">
+	</form>	
+	
+<?php
+echo "<pre>";
+	var_dump($_REQUEST);
+echo "</pre>";
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_insert_user"){
+	$user_insert = new adatbazis();
+	echo $user_insert->user_insert($_POST["input_tipus"],
+								  $_POST["input_liter"],
+								  $_POST["input_ar"]
+								  );
+}
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_delete_user"){
+	$user_delete = new adatbazis();
+	echo $user_delete->vizmelegito_delete($_POST["input_id"]);
+}
+
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_beactive_user"){
+	$user_beactive = new adatbazis();
+	echo $user_beactive->user_beactive($_POST["input_id"]);
+}
+
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_beinactive_user"){
+	$user_beinactive = new adatbazis();
+	echo $user_beinactive->user_beinactive($_POST["input_id"]);
+}
+
+$user_select = new adatbazis();
+$user_select->user_select();
+
+?>
+
+</body>
+</html>
+
+<?php
+class adatbazis{
+	public $servername = "localhost:3307";
+	public $username = "root";
+	public $password = "";
+	public $dbname = "vizmelegitok";
+	public $sql = NULL;
+	public $result = NULL;
+	public $row = NULL;
+	
+	public function __construct(){ self::kapcsolodas(); }
+	public function __destruct(){ self::kapcsolatbontas(); }
+	
+	public function kapcsolodas(){
+		$this->conn = new mysqli($this->servername, 
+						   $this->username, 
+						   $this->password, 
+						   $this->dbname);
+		if ($this->conn->connect_error) {
+			die("Connection failed: " . $this->conn->connect_error);
+		}
+		$this->conn->query("SET NAMES 'UTF8'");
+	}
+	public function kapcsolatbontas(){
+		$this->conn->close();
+	}
+	public function user_select(){
+		$this->sql = "SELECT  
+					id ,  
+					tipus ,    
+					liter ,  
+					ar 
+					
+				FROM  
+					vizmelegito ";
+		$this->result = $this->conn->query($this->sql);
+
+		if ($this->result->num_rows > 0) {
+			echo "<table>";
+			echo "<tr>";
+				echo "<th>ID</th>";
+				echo "<th>tipus</th>";
+				echo "<th>liter</th>";
+				echo "<th>ar</th>";
+				echo "<th>cmd</th>";
+			echo "</tr>";
+			while($this->row = $this->result->fetch_assoc()) {
+				echo "<tr>";
+					echo "<td>" . $this->row["id"]. "</td>";
+					echo "<td>" . $this->row["tipus"]. "</td>";
+					echo "<td>" . $this->row["liter"]. "</td>";
+					echo "<td>" . $this->row["ar"]. "</td>";
+					echo "<td>" ;
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_delete_user'>
+								  <input type='submit' value='DEL'>";
+						echo "</form>";
+						
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_beactive_user'>
+								  <input type='submit' value='arnoveles'>";
+						echo "</form>";
+						
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_beinactive_user'>
+								  <input type='submit' value='BeInActive'>";
+						echo "</form>";						
+					echo "</td>" ;
+				echo "</tr>";
+			}
+			echo "</table>";
+		} else {
+			echo "Nincsen az adott vizmelegito";
+		}		
+	}
+	public function user_insert($input_tipus,
+							    $input_liter,
+							    $input_ar){
+		if($input_tipus=="") { return "<p>Sikertelen adatfelvétel, hiányzó felhasználónév!</p>"; }
+		if($input_liter=="") { return "<p>Sikertelen adatfelvétel, hiányzó jelszó!</p>"; }
+		if($input_ar=="") { return "<p>Sikertelen adatfelvétel, hiányzó jelszó!</p>"; }
+		$this->sql = "INSERT INTO 
+						vizmelegito  
+						(
+							tipus ,    
+							liter ,  
+							ar
+						)
+						VALUES
+						(
+						'$input_tipus',
+						'$input_liter',
+						'$input_ar'
+						)
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres adatfelvétel!</p>";
+		} else {
+			return "<p>Sikertelen adatfelvétel!</p>";
+		}
+	}
+	
+	public function vizmelegito_delete($input_id){
+		if($input_id=="") { return "<p>Sikertelen törlés, hiányzó azonosító!</p>"; }
+		$this->sql = "DELETE FROM 
+						vizmelegito
+					  WHERE
+					    id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres törlés!</p>";
+		} else {
+			return "<p>Sikertelen törlés!</p>";
+		}
+	}
+	
+	public function user_beactive($input_id){
+		if($input_id=="") { return "<p>Sikertelen aktiválás, hiányzó azonosító!</p>"; }
+		$this->sql = "UPDATE
+						vizmelegito
+					  SET
+						ar = (ar +500)
+					  WHERE
+					    id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres aktiválás!</p>";
+		} else {
+			return "<p>Sikertelen aktiválás!</p>";
+		}
+	}
+
+	public function user_beinactive($input_id){
+		if($input_id=="") { return "<p>Sikertelen inaktiválás, hiányzó azonosító!</p>"; }
+		$this->sql = "UPDATE
+						users
+					  SET
+						user_activity = 0
+					  WHERE
+					    user_id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres inaktiválás!</p>";
+		} else {
+			return "<p>Sikertelen inaktiválás!</p>";
+		}
+	}
+
+	
+
+}
+
+?>
