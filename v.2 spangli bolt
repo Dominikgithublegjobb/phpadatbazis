@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	table, th,tr,td{
+		border: 1px solid red;
+		border-collapse: collapse;
+	}
+</style>
+</head>
+<body>
+
+
+	<form method="POST">
+		Add meg a fantazia nevet: <br />
+		<input type="text" name="input_nev"><br />
+		Add meg az kategoriajat: <br />
+		<input type="text" name="input_kategoria"><br />
+		Add meg az árat: <br />
+		<input type="number" name="input_ar"><br />
+		<input type="hidden" name="action" value="cmd_insert_user">
+		<input type="submit" value="Felvétel">
+	</form>	
+	
+<?php
+echo "<pre>";
+	var_dump($_REQUEST);
+echo "</pre>";
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_insert_user"){
+	$user_insert = new adatbazis();
+	echo $user_insert->user_insert($_POST["input_nev"],
+								  $_POST["input_kategoria"],
+								  $_POST["input_ar"]
+								  );
+}
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_delete_user"){
+	$user_delete = new adatbazis();
+	echo $user_delete->spangli_delete($_POST["input_id"]);
+}
+
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_kategoria_bio"){
+	$user_kategoria_bio = new adatbazis();
+	echo $user_kategoria_bio->spangli_kategoria_bio($_POST["input_id"]);
+}
+
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_kategoria_herbal"){
+	$user_kategoria_herbal = new adatbazis();
+	echo $user_kategoria_herbal->spangli_kategoria_herbal($_POST["input_id"]);
+}
+
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_arnoveles_user"){
+	$user_beactive = new adatbazis();
+	echo $user_beactive->user_arnoveles($_POST["input_id"]);
+}
+
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_arcsokkentes_user"){
+	$user_arcsokk = new adatbazis();
+	echo $user_arcsokk->user_arcsokkentes($_POST["input_id"]);
+}
+
+$user_select = new adatbazis();
+$user_select->user_select();
+
+?>
+
+</body>
+</html>
+
+<?php
+class adatbazis{
+	public $servername = "localhost:3307";
+	public $username = "root";
+	public $password = "";
+	public $dbname = "bolthely";
+	public $sql = NULL;
+	public $result = NULL;
+	public $row = NULL;
+	
+	public function __construct(){ self::kapcsolodas(); }
+	public function __destruct(){ self::kapcsolatbontas(); }
+	
+	public function kapcsolodas(){
+		$this->conn = new mysqli($this->servername, 
+						   $this->username, 
+						   $this->password, 
+						   $this->dbname);
+		if ($this->conn->connect_error) {
+			die("Connection failed: " . $this->conn->connect_error);
+		}
+		$this->conn->query("SET NAMES 'UTF8'");
+	}
+	public function kapcsolatbontas(){
+		$this->conn->close();
+	}
+	public function user_select(){
+		$this->sql = "SELECT  
+					id ,  
+					nev ,    
+					ar ,  
+					kategoria
+					
+				FROM  
+					spangli ";
+		$this->result = $this->conn->query($this->sql);
+
+		if ($this->result->num_rows > 0) {
+			echo "<table>";
+			echo "<tr>";
+				echo "<th>ID</th>";
+				echo "<th>Nev</th>";
+				echo "<th>Ár</th>";
+				echo "<th>kategoria</th>";
+				echo "<th>cmd</th>";
+			echo "</tr>";
+			while($this->row = $this->result->fetch_assoc()) {
+				echo "<tr>";
+					echo "<td>" . $this->row["id"]. "</td>";
+					echo "<td>" . $this->row["nev"]. "</td>";
+					echo "<td>" . $this->row["ar"]. "</td>";
+					echo "<td>" . $this->row["kategoria"]. "</td>";
+					echo "<td>" ;
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_delete_user'>
+								  <input type='submit' value='DEL'>";
+						echo "</form>";
+
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_kategoria_bio'>
+								  <input type='submit' value='bio kategoria'>";
+						echo "</form>";
+
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_kategoria_herbal'>
+								  <input type='submit' value='herbal kategoria'>";
+						echo "</form>";
+						
+						
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_arnoveles_user'>
+								  <input type='submit' value='arnoveles'>";
+						echo "</form>";
+						
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_arcsokkentes_user'>
+								  <input type='submit' value='arcsokkentes'>";
+						echo "</form>";						
+					echo "</td>" ;
+				echo "</tr>";
+			}
+			echo "</table>";
+		} else {
+			echo "Nincsen az adott spangli";
+		}		
+	}
+	public function user_insert($input_nev,
+							    $input_kategoria,
+							    $input_ar){
+		if($input_nev=="") { return "<p>Sikertelen adatfelvétel, hiányzó nev!</p>"; }
+		if($input_kategoria=="") { return "<p>Sikertelen adatfelvétel, hiányzó kategoria!</p>"; }
+		if($input_ar=="") { return "<p>Sikertelen adatfelvétel, hiányzó ar!</p>"; }
+		$this->sql = "INSERT INTO 
+						spangli 
+						(
+							nev ,    
+							ar ,  
+							kategoria
+						)
+						VALUES
+						(
+						'$input_nev',
+						'$input_ar',
+						'$input_kategoria'
+						)
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres adatfelvétel!</p>";
+		} else {
+			return "<p>Sikertelen adatfelvétel!</p>";
+		}
+	}
+	
+	public function spangli_delete($input_id){
+		if($input_id=="") { return "<p>Sikertelen törlés, hiányzó azonosító!</p>"; }
+		$this->sql = "DELETE FROM 
+						spangli
+					  WHERE
+					    id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres törlés!</p>";
+		} else {
+			return "<p>Sikertelen törlés!</p>";
+		}
+	}
+
+	public function spangli_kategoria_bio($input_id){
+		if($input_id=="") { return "<p>Sikertelen atalitas, hiányzó azonosító!</p>"; }
+		$this->sql = "UPDATE	 
+						spangli
+						SET
+							kategoria='bio'
+					  WHERE
+					    id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres atalitas!</p>";
+		} else {
+			return "<p>Sikertelen atalitas!</p>";
+		}
+	}
+
+	public function spangli_kategoria_herbal($input_id){
+		if($input_id=="") { return "<p>Sikertelen atalitas, hiányzó azonosító!</p>"; }
+		$this->sql = "UPDATE	 
+						spangli
+						SET
+							kategoria='herbal'
+					  WHERE
+					    id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres atalitas!</p>";
+		} else {
+			return "<p>Sikertelen atalitas!</p>";
+		}
+	}
+	
+	public function user_arnoveles($input_id){
+		if($input_id=="") { return "<p>Sikertelen növeles, hiányzó azonosito!</p>"; }
+		$this->sql = "UPDATE
+						spangli
+					  SET
+						ar = (ar +500)
+					  WHERE
+					    id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres ar noveles!</p>";
+		} else {
+			return "<p>Sikertelen ar noveles!</p>";
+		}
+	}
+
+	public function user_arcsokkentes($input_id){
+		if($input_id=="") { return "<p>Sikertelen csokkentes, hiányzó azonosító!</p>"; }
+		$this->sql = "UPDATE
+						spangli
+					  SET
+						ar = (ar-500)
+					  WHERE
+					    id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres ar csokkentes!</p>";
+		} else {
+			return "<p>Sikertelen ar csokkentes!</p>";
+		}
+	}
+
+	
+
+}
+
+?>
