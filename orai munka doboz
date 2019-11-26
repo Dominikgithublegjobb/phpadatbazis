@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	table, th,tr,td{
+		border: 1px solid red;
+		border-collapse: collapse;
+	}
+</style>
+</head>
+<body>
+
+
+	<form method="POST">
+		Add meg a doboz nevet: <br />
+		<input type="text" name="input_nev"><br />
+		Add meg az árat: <br />
+		<input type="number" name="input_ar"><br />
+		Add meg az idt: <br />
+		<input type="number" name="input_id"><br />
+		<input type="hidden" name="action" value="cmd_insert_doboz">
+		<input type="submit" value="Felvétel">
+	</form>	
+	
+<?php
+echo "<pre>";
+	var_dump($_REQUEST);
+echo "</pre>";
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_insert_doboz"){
+	$doboz_insert = new adatbazis();
+	echo $doboz_insert->doboz_insert($_POST["input_nev"],
+								  $_POST["input_ar"]
+								  );
+}
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_delete_doboz"){
+	$doboz_delete = new adatbazis();
+	echo $doboz_delete->doboz_delete($_POST["input_id"]);
+}
+
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_update_doboz"){
+	$doboz_update = new adatbazis();
+	echo $doboz_update->doboz_update($_POST["input_nev_modosit"],
+									 $_POST["input_ar_modosit"],
+									 $_POST["input_id_modosit"]);
+}
+
+if(isset($_POST["action"]) and $_POST["action"]=="cmd_updateform_doboz"){
+	$doboz_update = new adatbazis();
+	echo $doboz_update->doboz_updateform($_POST["input_id"]);
+}
+
+$doboz_select = new adatbazis();
+$doboz_select->doboz_select();
+
+?>
+
+</body>
+</html>
+
+<?php
+class adatbazis{
+	public $servername = "localhost:3307";
+	public $username = "root";
+	public $password = "";
+	public $dbname = "adattar";
+	public $sql = NULL;
+	public $result = NULL;
+	public $row = NULL;
+	
+	public function __construct(){ self::kapcsolodas(); }
+	public function __destruct(){ self::kapcsolatbontas(); }
+	
+	public function kapcsolodas(){
+		$this->conn = new mysqli($this->servername, 
+						   $this->username, 
+						   $this->password, 
+						   $this->dbname);
+		if ($this->conn->connect_error) {
+			die("Connection failed: " . $this->conn->connect_error);
+		}
+		$this->conn->query("SET NAMES 'UTF8'");
+	}
+	public function kapcsolatbontas(){
+		$this->conn->close();
+	}
+	public function doboz_select(){
+		$this->sql = "SELECT  
+					doboz_id ,  
+					doboz_nev ,     
+					doboz_ar	
+				FROM  
+					dobozok ";
+		$this->result = $this->conn->query($this->sql);
+		
+		if ($this->result->num_rows > 0) {
+			echo "<table>";
+			echo "<tr>";
+				echo "<th>ID</th>";
+				echo "<th>Nev</th>";
+				echo "<th>Ár</th>";
+				echo "<th>cmd</th>";
+			echo "</tr>";
+			while($this->row = $this->result->fetch_assoc()) {
+				echo "<tr>";
+					echo "<td>" . $this->row["doboz_id"]. "</td>";
+					echo "<td>" . $this->row["doboz_nev"]. "</td>";
+					echo "<td>" . $this->row["doboz_ar"]. "</td>";
+					echo "<td>" ;
+						echo "<form method='POST'>";
+							echo "<input type='hidden' name='input_id' value='".$this->row["doboz_id"]."'>";
+							echo "<input type='hidden' name='action' value='cmd_delete_doboz'>
+								  <input type='submit' value='DEL'>";
+						echo "</form>";
+
+						echo "<form method='POST'>";
+						echo "<input type='hidden' name='input_id' value='".$this->row["doboz_id"]."'>";
+						echo "<input type='hidden' name='action' value='cmd_updateform_doboz'>
+							  <input type='submit' value='update'>";
+					echo "</form>";
+					echo "</td>" ;
+				echo "</tr>";
+			}
+			echo "</table>";
+			
+		} else {
+			echo "Nincsen az adott doboz";
+		}
+				
+	}
+	public function doboz_insert($input_nev,
+							    $input_ar){
+		if($input_nev=="") { return "<p>Sikertelen adatfelvétel, hiányzó nev!</p>"; }
+		if($input_ar=="") { return "<p>Sikertelen adatfelvétel, hiányzó ar!</p>"; }
+		$this->sql = "INSERT INTO 
+						dobozok 
+						(
+							doboz_nev ,      
+							doboz_ar
+						)
+						VALUES
+						(
+						'$input_nev',
+						'$input_ar'
+						)
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres adatfelvétel!</p>";
+		} else {
+			return "<p>Sikertelen adatfelvétel!</p>";
+		}
+	}
+
+	public function doboz_update($input_nev,
+								$input_ar,
+								$input_id){
+		if($input_nev=="") { return "<p>Sikertelen update, hiányzó nev!</p>"; }
+		if($input_ar=="") { return "<p>Sikertelen update, hiányzó ar!</p>"; }
+		if($input_id=="") { return "<p>Sikertelen update, hiányzó id!</p>"; }
+		$this->sql = "UPDATE dobozok SET doboz_nev='".$input_nev."', doboz_ar=".$input_ar." WHERE doboz_id=".$input_id;
+		echo $this->sql;
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres update!</p>";
+		} else {
+			return "<p>Sikertelen update!</p>";
+		}
+	}
+
+	public function doboz_updateform($doboz_id)
+	{
+		$this->sql = "SELECT * FROM dobozok WHERE doboz_id=".$doboz_id;
+		$this->result=$this->conn->query($this->sql);
+		$this->row = $this->result->fetch_assoc();
+		echo
+		'<form method="post">
+			Add meg a doboz nevet: <br />
+			<input type="text" name="input_nev_modosit" value="'.$this->row["doboz_nev"].'"><br />
+			Add meg az árat: <br />
+			<input type="number" name="input_ar_modosit" value="'.$this->row["doboz_ar"].'"><br />
+			Add meg az idt: <br />
+			<input type="number" name="input_id_modosit" value="'.$this->row["doboz_id"].'"><br />
+			<input type="hidden" name="action" value="cmd_update_doboz">
+			<input type="submit" value="Módosítás végrehajtása">
+		</form>';
+	}
+	
+	public function doboz_delete($input_id){
+		if($input_id=="") { return "<p>Sikertelen törlés, hiányzó azonosító!</p>"; }
+		$this->sql = "DELETE FROM 
+						dobozok
+					  WHERE
+					    doboz_id = $input_id
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres törlés!</p>";
+		} else {
+			return "<p>Sikertelen törlés!</p>";
+		}
+	}
+
+	
+	
+
+	
+
+}
+
+?>
