@@ -1,0 +1,200 @@
+<style>	
+	table, tr,td,th{
+		border: 1px solid green;
+		border-collapse: collapse;
+	}
+</style>	
+	
+	<form>
+		<input type="hidden" name="action" value="cmd_insertform_tanar">
+		<input type="submit" value="tanar felvétele űrlap">
+	</form>	
+<?php
+
+echo "<pre>";
+	var_dump($_REQUEST);
+echo "</pre>";
+
+if(isset($_GET["action"]) and $_GET["action"]=="cmd_insertform_tanar"){
+	?>
+	<h1>Felvétel űrlap</h1>
+	<form>
+		Tanar neve:<br />
+		<input type="text" name="input_tanar_nev"><br />
+		Tanar pontszama:<br />
+		<input type="number" name="input_tanar_pont"><br />	
+		<input type="hidden" name="action" value="cmd_insert_tanar">
+		<input type="submit" value="tanar felvétele">
+	</form>	
+	<?php
+}
+if(isset($_GET["action"]) and $_GET["action"]=="cmd_insert_tanar"){
+	if (isset($_GET["input_tanar_nev"]) and
+		!empty($_GET["input_tanar_nev"]) and
+		isset($_GET["input_tanar_pont"]) and
+		is_numeric($_GET["input_tanar_pont"])){
+			$felvetel = new dobozok();
+			echo $felvetel->doboz_felvetel($_GET["input_tanar_nev"],
+										   $_GET["input_tanar_pont"]);
+		}
+}
+
+if(isset($_GET["action"]) and $_GET["action"]=="cmd_delete_tanar"){
+	if (isset($_GET["input_id"]) and
+		is_numeric($_GET["input_id"])){
+			$torles = new dobozok();
+			echo $torles->doboz_torles($_GET["input_id"]);
+		}
+}
+
+$dobozok = new dobozok();
+$dobozok->tanar_lista();
+
+class dobozok{
+	public $servername = "localhost:3307";
+	public $username = "root";
+	public $password = "";
+	public $dbname = "tanar";
+	public function __construct(){ self::kapcsolodas(); }
+	public function __destruct(){ self::kapcsolatbontas();}
+	public function kapcsolodas(){
+		// Create connection
+		$this->conn = new mysqli($this->servername, $this->username, $this->password, $this->dbname);
+		// Check connection
+		if ($this->conn->connect_error) {
+			die("Connection failed: " . $this->conn->connect_error);
+		}		
+	}
+	public function kapcsolatbontas(){
+		$this->conn->close();
+	}
+	
+	public function doboz_torles($id){
+		if ($id == "") return "<p>Sikertelen törlés, a id nem lehet üres!</p>";
+		$this->sql = "DELETE FROM tanarok
+					  WHERE id = $id;
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres törlés!</p>";
+		} else {
+			return "<p>Sikertelen törlés!</p>";
+		}
+	}	
+	public function doboz_felvetel($nev,$ar){
+		if ($nev == "") return "<p>Sikertelen adatfelvétel, a név nem lehet üres!</p>";
+		$this->sql = "INSERT INTO tanarok
+						(
+							id, 
+							tanar_nev, 
+							tanar_pontszam
+						)
+						values
+						(
+							NULL,
+							'$nev',
+							$ar
+						)
+				";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres adatfelvétel!</p>";
+		} else {
+			return "<p>Sikertelen adatfelvétel!</p>";
+		}
+	}
+	
+	public function tanar_lista(){
+		$like = "";
+		if(isset($_GET["keresendo_szo"]) and !empty($_GET["keresendo_szo"])
+			){
+			$like = " WHERE tanar_nev LIKE '%".$_GET["keresendo_szo"]."%' OR
+							tanar_pontszam  LIKE '%".$_GET["keresendo_szo"]."%'	
+			";
+		}
+		$order_by = " ORDER BY id ASC";
+		if(isset($_GET["action"])){
+			if($_GET["action"]=="rendez_id_asc"){
+				$order_by = " ORDER BY id ASC";
+			}
+			if($_GET["action"]=="rendez_id_desc"){
+				$order_by = " ORDER BY id DESC";
+			}	
+			if($_GET["action"]=="rendez_nev_asc"){
+				$order_by = " ORDER BY tanar_nev ASC";
+			}
+			if($_GET["action"]=="rendez_nev_desc"){
+				$order_by = " ORDER BY tanar_nev DESC";
+            }
+            if($_GET["action"]=="rendez_pont_asc"){
+				$order_by = " ORDER BY tanar_pontszam ASC";
+			}
+			if($_GET["action"]=="rendez_pont_desc"){
+				$order_by = " ORDER BY tanar_pontszam DESC";
+			}						
+		}
+		$this->sql = "SELECT 
+				id, 
+				tanar_nev, 
+				tanar_pontszam 
+				FROM 
+				tanarok" . $like . $order_by;
+		$this->result = $this->conn->query($this->sql);
+		
+		if ($this->result->num_rows > 0) {
+			echo "<form>";
+				echo "<input type='text' name='keresendo_szo'>";
+				echo "<input type='submit' value='keress!'>";
+			echo "</form>";
+			echo "<table>";
+				echo "<tr>";
+					echo "<th>";
+						echo "ID";
+						echo "<a href='?action=rendez_id_asc'>+</a>";
+						echo "<a href='?action=rendez_id_desc'>-</a>";
+					echo "</th>";
+					echo "<th>";
+						echo "NÉV";
+						echo "<a href='?action=rendez_nev_asc'>+</a>";
+						echo "<a href='?action=rendez_nev_desc'>-</a>";						
+					echo "</th>";
+					echo "<th>";
+                        echo "pontszam";
+                        echo "<a href='?action=rendez_pont_asc'>+</a>";
+						echo "<a href='?action=rendez_pont_desc'>-</a>";	
+					echo "</th>";					
+					echo "<th>";
+						echo "Művelet";
+					echo "</th>";					
+				echo "</tr>";
+			// output data of each row
+			while($this->row = $this->result->fetch_assoc()) {
+				echo "<tr>";
+		
+					echo "<td>" . $this->row["id"] . "</td>";
+					echo "<td>" . $this->row["tanar_nev"]. "</td>";
+					echo "<td>" . $this->row["tanar_pontszam"] . "</td>";
+					echo "<td>"; 
+					echo "<form>";
+						echo "	<input type='hidden' name='action' value='cmd_updateform_doboz'>";
+						echo "	<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+						echo "<input type='submit' value='módosítás'>";
+					echo "</form>";				
+					echo "<form>";
+						echo "	<input type='hidden' name='action' value='cmd_delete_tanar'>";
+						echo "	<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+						echo "<input type='submit' value='törlés'>";
+					echo "</form>";
+									
+					echo "</td>" ;
+				echo "</tr>";
+			}
+			echo "</table>";
+		} else {
+			echo "0 results";
+		}
+		
+		
+	}
+}
+
+
+?>
