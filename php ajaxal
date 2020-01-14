@@ -1,0 +1,470 @@
+<?php
+
+	$user_select = new adatbazis();
+	$user_select->user_select();
+	$user_delete=new adatbazis();
+	$user_delete->user_delete($_GET["input_id"]);
+	
+class adatbazis{
+	public $servername = "localhost:3307";
+	public $username = "root";
+	public $password = "";
+	public $dbname = "webshop";
+	public $conn = NULL;
+	public $sql = NULL;
+	public $result = NULL;
+	public $row = NULL;
+	
+	public function __construct(){ self::kapcsolodas(); }
+	public function __destruct(){ self::kapcsolatbontas(); }
+	
+	public function kapcsolodas(){
+		// Create connection
+		$this->conn = new mysqli($this->servername, 
+						   $this->username, 
+						   $this->password, 
+						   $this->dbname);
+		// Check connection
+		if ($this->conn->connect_error) {
+			die("Connection failed: " . $this->conn->connect_error);
+		}	
+	}
+	public function user_insert(
+								$input_user_password,
+								$input_user_email,
+								$input_user_perm,
+								$input_user_credit){
+		if($input_user_email=="") {
+			return "<p>Sikertelen adatfelvétel! Hiányzó név!</p>";
+		}	
+		if($input_user_password=="") {
+			return "<p>Sikertelen adatfelvétel! Hiányzó jelszó!</p>";
+		}	
+		$this->sql = "INSERT INTO
+						`usert`
+						(
+							`u_id`, 
+							`u_email`, 
+							`u_password`,  
+							`u_perm`,  
+							`u_credit` 
+						)
+						VALUES
+						(
+							NULL,
+							'$input_user_email',
+							'$input_user_password',
+							'$input_user_perm',
+							$input_user_credit,
+							
+						)
+						";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres adatfelvétel!</p>";
+		} else {
+			return "<p>Sikertelen adatfelvétel!</p>";
+		}
+	}
+	public function user_delete($input_user_id){
+		if($input_user_id=="") {
+			return "<p>Sikertelen törlés! Hiányzó azonosító!</p>";
+		}	
+		$this->sql = "DELETE FROM `users`
+					  WHERE u_id = $input_user_id;";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres törlés!</p>";
+		} else {
+			return "<p>Sikertelen törlés!</p>";
+		}
+	}
+	
+	public function makeadmin_user($input_user_id){
+		if($input_user_id=="") {
+			return "<p>Sikertelen admin tétel! Hiányzó azonosító!</p>";
+		}	
+		$this->sql = "UPDATE `users`
+					  SET u_perm = 'admin'
+					  WHERE u_id = $input_user_id;";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres admin tétel!</p>";
+		} else {
+			return "<p>Sikertelen admin tétel!</p>";
+		}
+	}
+	
+	public function makeuser_user($input_user_id){
+		if($input_user_id=="") {
+			return "<p>Sikertelen user tétel! Hiányzó azonosító!</p>";
+		}	
+		$this->sql = "UPDATE `users`
+					  SET u_perm = 'user'
+					  WHERE u_id = $input_user_id;";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres user tétel!</p>";
+		} else {
+			return "<p>Sikertelen user tétel!</p>";
+		}
+	}
+	/*	
+	public function p100_user($input_user_id){
+		if($input_user_id=="") {
+			return "<p>Sikertelen kredit emelés(+100)! Hiányzó azonosító!</p>";
+		}	
+		$this->sql = "UPDATE `users`
+					  SET user_credit = (user_credit+100)
+					  WHERE user_id = $input_user_id;";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres kredit emelés(+100) tétel!</p>";
+		} else {
+			return "<p>Sikertelen kredit emelés(+100) tétel!</p>";
+		}
+	}
+			
+	public function m100_user($input_user_id){
+		if($input_user_id=="") {
+			return "<p>Sikertelen kredit csökkentés(-100)! Hiányzó azonosító!</p>";
+		}	
+		$this->sql = "UPDATE `users`
+					  SET user_credit = (user_credit-100)
+					  WHERE user_id = $input_user_id;";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres kredit csökkentés(-100) tétel!</p>";
+		} else {
+			return "<p>Sikertelen kredit csökkentés(-100) tétel!</p>";
+		}
+	}
+	*/
+	public function user_select($order_by = " order by u_id asc"){
+		$this->sql = "SELECT 
+					`u_id`,
+					`u_email`, 
+					`u_password`,  
+					`u_perm`,  
+					`u_credit` 
+				FROM 
+					`users`
+				$order_by
+				";
+		$this->result = $this->conn->query($this->sql);
+
+		if ($this->result->num_rows > 0) {
+			echo "<table>";
+			echo "<tr>";
+					echo "<th>";
+						echo "ID";
+					echo "</th>";
+					echo "<th>";
+						echo "@";
+					echo "</th>";
+					echo "<th>password</th>";
+					echo "<th>permis</th>";
+					echo "<th>credit</th>";
+			echo "</tr>";
+			while($this->row = $this->result->fetch_assoc()) {
+				echo "<tr>";
+					echo "<td>";
+						echo $this->row["u_id"];
+					echo "</td>";
+					echo "<td>";
+						echo $this->row["u_email"];
+					echo "</td>";
+					echo "<td>";
+						echo $this->row["u_password"];
+					echo "</td>";
+					echo "<td>";
+						echo $this->row["u_perm"];
+					echo "</td>";
+					echo "<td>";
+						echo $this->row["u_credit"];
+					echo "</td>";					
+					echo "<td>";
+
+						echo "<button onclick='torles(".$this->row["u_id"].")'>Törlés</button>";
+						echo "<button onclick='makeadmin(".$this->row["u_id"].")'>admin</button>";		
+						echo "<button onclick='makeuser(".$this->row["u_id"].")'>user</button>";								 
+				
+					echo "</td>";			
+				echo "</tr>";
+			}
+			echo "</table>";
+		} else {
+			echo "0 results";
+		}
+		
+	}
+	public function kapcsolatbontas(){
+		$this->conn->close();	
+	}
+}
+?>	
+
+<?php
+
+$user_insert = new adatbazis();
+echo $user_insert->user_insert($_GET["input_user_email"],
+						  $_GET["input_user_password"],
+						  $_GET["input_user_perm"]
+						  );
+
+	
+class adatbazis{
+	public $servername = "localhost:3307";
+	public $username = "root";
+	public $password = "";
+	public $dbname = "webshop";
+	public $conn = NULL;
+	public $sql = NULL;
+	public $result = NULL;
+	public $row = NULL;
+	
+	public function __construct(){ self::kapcsolodas(); }
+	public function __destruct(){ self::kapcsolatbontas(); }
+	
+	public function kapcsolodas(){
+		// Create connection
+		$this->conn = new mysqli($this->servername, 
+						   $this->username, 
+						   $this->password, 
+						   $this->dbname);
+		// Check connection
+		if ($this->conn->connect_error) {
+			die("Connection failed: " . $this->conn->connect_error);
+		}	
+	}
+	public function user_insert($input_user_email,
+								$input_user_password,
+								$input_user_perm){
+		if($input_user_email=="") {
+			return "<p>Sikertelen adatfelvétel! Hiányzó név!</p>";
+		}	
+		if($input_user_password=="") {
+			return "<p>Sikertelen adatfelvétel! Hiányzó jelszó!</p>";
+		}	
+		$this->sql = "INSERT INTO
+						`users`
+						(
+							`u_id`, 
+							`u_email`,
+							`u_password`, 
+							`u_perm`  
+						)
+						VALUES
+						(
+							NULL,
+							'$input_user_email',
+							'$input_user_password',
+							'$input_user_perm'
+							
+						)
+						";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres adatfelvétel!</p>";
+		} else {
+			return "<p>Sikertelen adatfelvétel!</p>";
+		}
+	}
+	public function user_delete($input_user_id){
+		if($input_user_id=="") {
+			return "<p>Sikertelen törlés! Hiányzó azonosító!</p>";
+		}	
+		$this->sql = "DELETE FROM `users`
+					  WHERE u_id = $input_user_id;";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres törlés!</p>";
+		} else {
+			return "<p>Sikertelen törlés!</p>";
+		}
+	}
+	
+	public function p100_user($input_user_id){
+		if($input_user_id=="") {
+			return "<p>Sikertelen kredit emelés(+100)! Hiányzó azonosító!</p>";
+		}	
+		$this->sql = "UPDATE `users`
+					  SET user_credit = (user_credit+100)
+					  WHERE user_id = $input_user_id;";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres kredit emelés(+100) tétel!</p>";
+		} else {
+			return "<p>Sikertelen kredit emelés(+100) tétel!</p>";
+		}
+	}
+			
+	public function m100_user($input_user_id){
+		if($input_user_id=="") {
+			return "<p>Sikertelen kredit csökkentés(-100)! Hiányzó azonosító!</p>";
+		}	
+		$this->sql = "UPDATE `users`
+					  SET user_credit = (user_credit-100)
+					  WHERE user_id = $input_user_id;";
+		if($this->conn->query($this->sql)){
+			return "<p>Sikeres kredit csökkentés(-100) tétel!</p>";
+		} else {
+			return "<p>Sikertelen kredit csökkentés(-100) tétel!</p>";
+		}
+	}
+	
+	public function user_select($order_by = " order by u_id asc"){
+		$this->sql = "SELECT 
+					`u_id`,
+					`u_email`, 
+					`u_password`,  
+					`u_perm`,  
+					`u_credit` 
+				FROM 
+					`users`
+				$order_by
+				";
+		$this->result = $this->conn->query($this->sql);
+
+		if ($this->result->num_rows > 0) {
+			echo "<table>";
+			echo "<tr>";
+					echo "<th>";
+						echo "ID";
+					echo "</th>";
+					echo "<th>";
+						echo "@";
+					echo "</th>";
+					echo "<th>password</th>";
+					echo "<th>permis</th>";
+					echo "<th>credit</th>";
+			echo "</tr>";
+			while($this->row = $this->result->fetch_assoc()) {
+				echo "<tr>";
+					echo "<td>";
+						echo $this->row["u_id"];
+					echo "</td>";
+					echo "<td>";
+						echo $this->row["u_email"];
+					echo "</td>";
+					echo "<td>";
+						echo $this->row["u_password"];
+					echo "</td>";
+					echo "<td>";
+						echo $this->row["u_perm"];
+					echo "</td>";
+					echo "<td>";
+						echo $this->row["u_credit"];
+					echo "</td>";					
+					echo "<td>";
+
+						echo "<button onclick='torles(".$this->row["u_id"].")'>Törlés</button>";	
+						echo "<button onclick='makeadmin(".$this->row["u_id"].")'>admin</button>";		
+						echo "<button onclick='makeuser(".$this->row["u_id"].")'>user</button>";									 
+				
+					echo "</td>";			
+				echo "</tr>";
+			}
+			echo "</table>";
+		} else {
+			echo "0 results";
+		}
+		
+	}
+	
+	public function kapcsolatbontas(){
+		$this->conn->close();	
+	}
+}
+?>	
+
+<!DOCTYPE html>
+<html>
+<body onload="felhasznalok()">
+
+
+		Add meg a emailed: <br />
+		<input type="email" id="input_user_email"><br />
+		Add meg a jelszavad: <br />
+		<input type="password" id="input_user_password"><br />
+		Add meg a jogosultság: <br />	
+		<select id="input_user_perm">
+			<option value='user'>user</option>
+			<option value='admin'>admin</option>
+		</select><br />	
+		<input type="hidden" id="action" value="cmd_insert_user">
+		<button onclick="adatfelvetel()">Felvétel</button>
+
+	
+<div id="muvelet"></div>
+<div id="tartalom"></div>
+<h2>Felhasználók</h2>
+<button type="button" onclick="felhasznalok()">Frissítés</button>
+
+
+<script>
+function adatfelvetel(){
+	input_user_email = document.getElementById("input_user_email").value;
+	input_user_password = document.getElementById("input_user_password").value;
+	input_user_perm = document.getElementById("input_user_perm").value;
+	felvetel_url="";
+	felvetel_url+="?input_user_email="+input_user_email;
+	felvetel_url+="&input_user_password="+input_user_password;
+	felvetel_url+="&input_user_perm="+input_user_perm;
+	console.log(felvetel_url);
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("muvelet").innerHTML =
+      this.responseText;
+	  felhasznalok();
+    }
+  };
+  xhttp.open("GET", "insert_user.php"+felvetel_url, true);
+  xhttp.send();	
+}
+function felhasznalok() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("tartalom").innerHTML =
+      this.responseText;
+    }
+  };
+  xhttp.open("GET", "select_user.php", true);
+  xhttp.send();
+}
+
+function torles(u_id) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("tartalom").innerHTML =
+      this.responseText;
+    }
+  };
+  xhttp.open("GET", "select_user.php?input_id="+u_id, true);
+  xhttp.send();
+	felhasznalok();
+}
+
+function makeadmin(u_id) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("tartalom").innerHTML =
+      this.responseText;
+    }
+  };
+  xhttp.open("GET", "select_user.php?input_id="+u_id, true);
+  xhttp.send();
+	felhasznalok();
+}
+
+function makeuser(u_id) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("tartalom").innerHTML =
+      this.responseText;
+    }
+  };
+  xhttp.open("GET", "select_user.php?input_id="+u_id, true);
+  xhttp.send();
+	felhasznalok();
+}
+</script>
+
+</body>
+</html>
