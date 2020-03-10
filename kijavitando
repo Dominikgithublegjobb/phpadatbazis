@@ -1,0 +1,130 @@
+<?php
+
+$tablet=new adatbazis();
+$tablet->select();
+
+if(isset($_POST["action"])and $_POST["action"]=="Delete_tablet"){
+    $delete=new adatbazis();
+    echo $delete->delete($_POST["id"]);
+}
+
+if(isset($_POST["action"])and $_POST["action"]=="android_make"){
+    $input_id=new adatbazis();
+    echo $delete->delete($_POST["id"]);
+}
+if(isset($_POST["action"])and $_POST["action"]=="ios_make"){
+    $select_tabletm=new adatbazis();
+    echo $select_tabletm->select_tablet($_POST["id"]);
+}
+
+class adatbazis{
+    public $servername="localhost:3307";
+    public $username="root";
+    public $password="";
+    public $dbname="tablet";
+    public $sql=NULL;
+    public $result=NULL;
+    public $row=NULL;
+
+    public function __construct(){self::kapcsolodas();}
+    public function __destruct(){self::kapcsolatbontas();}
+   
+    public function kapcsolodas(){
+        $this->conn=new mysqli($this->servername,$this->username,$this->password,$this->dbname);
+        if($this->conn->connect_error){
+            die("Connection failed:".$this->conn->connect_error);
+        }
+        $this->conn->query("SET NAMES 'UTF8'");
+        
+       
+    }
+    public function kapcsolatbontas(){
+        $this->conn->close();
+    }
+
+
+ 
+   
+
+    public function select(){
+        $this->sql="SELECT  id,nev,op,magok,ar FROM tabletek";
+
+        $this->result=$this->conn->query($this->sql);
+
+        if($this->result->num_row>0){
+            echo "<table>";
+            echo "<tr>";
+                echo "<th>id</th>";
+                echo "<th>nev</th>";
+                echo "<th>op</th>";
+                echo "<th>magok</th>";
+                echo "<th>ar</th>";
+            echo "</tr>";
+
+            while( $this->row=$this->result->fetch_assoc()){
+                echo "<tr>";
+                    echo "<td>".$this->row["id"]."</td>";
+                    echo "<td>".$this->row["nev"]."</td>";
+                    echo "<td>".$this->row["op"]."</td>";
+                    echo "<td>".$this->row["magok"]."</td>";
+                    echo "<td>".$this->row["ar"]."</td>";
+                echo "<td>";
+                echo "<form method='POST'>";
+                echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+                echo "<input type='hidden'name='action'value='Delete_tablet'>
+                    <input type='submit'value='delete'>";
+                        echo "</form>";
+                    echo "</td>";
+                    echo "<td>";
+                    echo "<form method='POST'>";
+                    echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+                    echo "<input type='hidden'name='action'value='android_make'>
+                        <input type='submit'value='android'>";
+                            echo "</form>";
+                        echo "</td>";
+                        echo "<td>";
+                        echo "<form method='POST'>";
+                        echo "<input type='hidden' name='input_id' value='".$this->row["id"]."'>";
+                        echo "<input type='hidden'name='action'value='ios_make'>
+                            <input type='submit'value='ios'>";
+                                echo "</form>";
+                            echo "</td>";    
+                echo "</tr>";
+            }
+            echo "</table>";
+        }else{
+            echo "hibauzneet";
+        }
+
+    }
+
+    public function delete($input_id){
+        if($input_id==""){return "<p>sikertelen torles</p>";}
+        $this->sql="DELETE FROM tabletek WHERE id=$input_id";
+        if($this->conn->query($this->sql)){
+            return "<p>sikeres torles</p>";
+        }  else{
+            return "<p>sikertelen torles</p>";
+        }
+    }
+    public function android_make($input_id){
+        if($input_id==""){return "<p>sikertelen torles</p>";}
+        $this->sql="UPDATE op FROM tabletek VALUE 'android' WHERE id=$input_id";
+        if($this->conn->query($this->sql)){
+            return "<p>sikeres torles</p>";
+        }  else{
+            return "<p>sikertelen torles</p>";
+        }
+    }
+    public function ios_make($input_id){
+        if($input_id==""){return "<p>sikertelen torles</p>";}
+        $this->sql="UPDATE op FROM tabletek VALUES 'ios' WHERE id=$input_id";
+        if($this->conn->query($this->sql)){
+            return "<p>sikeres torles</p>";
+        }  else{
+            return "<p>sikertelen torles</p>";
+        }
+    }
+
+}
+?>
